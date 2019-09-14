@@ -107,8 +107,31 @@ public class Cell {
         }
     }
 
-    public boolean has2ValuesInNote() {
-        return this.noteValues != null && this.noteValues.size() == 2;
+    public boolean hasNumberValuesInNote(int n) {
+        return this.noteValues != null && this.noteValues.size() == n;
+    }
+
+    public boolean hasSameNoteValuesWith(Cell targetCell) {
+        return this.noteValues != null
+                && this.noteValues.equals(targetCell.getNoteValues());
+    }
+
+    public boolean inSameRow(Cell targetCell) {
+        return this.id != targetCell.getId() && this.row == targetCell.getRow();
+    }
+
+    public boolean inSameColumn(Cell targetCell) {
+        return this.id != targetCell.getId() && this.column == targetCell.getColumn();
+    }
+
+    public boolean inSameZone(Cell targetCell) {
+        return this.id != targetCell.getId() && this.zone == targetCell.getZone();
+    }
+
+    public void filterByUnrelatedCell(Cell targetCell) {
+        if (this.value == 0 && targetCell.getValue() == 0) {
+            this.noteValues.removeAll(targetCell.getNoteValues());
+        }
     }
 
 }

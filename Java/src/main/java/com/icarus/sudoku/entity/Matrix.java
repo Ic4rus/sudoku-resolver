@@ -1,9 +1,6 @@
 package com.icarus.sudoku.entity;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 
 public class Matrix {
 
@@ -15,7 +12,7 @@ public class Matrix {
 
     private Cell[][] cells;
 
-    private List<Cell> noneValueCellList, twoNoteValuesCellList;
+    private List<Cell> noneValueCellList;
 
     public Matrix(int[][] values) {
         matrixSize = 9;
@@ -65,6 +62,13 @@ public class Matrix {
             }
         }
         System.out.println(border);
+        for (Cell cell : noneValueCellList) {
+            System.out.print(cell.getRow() + "-" + cell.getColumn() + ": ");
+            for (int v : cell.getNoteValues()) {
+                System.out.print(v + ", ");
+            }
+            System.out.println();
+        }
     }
 
     public List<Cell> findRelatedCell(Cell sourceCell) {
@@ -131,24 +135,84 @@ public class Matrix {
         }
     }
 
-    /**
-     * Tim cac diem ma co cung 2 value
-     */
     public void step2() {
-        twoNoteValuesCellList = new ArrayList<>();
-        for (Cell noneValueCell : noneValueCellList) {
-            if (noneValueCell.has2ValuesInNote()) {
-                twoNoteValuesCellList.add(noneValueCell);
+        int size = noneValueCellList.size();
+        Cell cell1, cell2;
+        for (int i = 0; i < size; i++) {
+            cell1 = noneValueCellList.get(i);
+            if (cell1.hasNumberValuesInNote(2)) {
+                for (int j = i + 1; j < size; j++) {
+                    cell2 = noneValueCellList.get(j);
+                    if (cell1.hasSameNoteValuesWith(cell2) && cell1.relateToCell(cell2)) {
+                        updateNoteValuesInStep2(cell1, cell2);
+                    }
+                }
             }
         }
     }
 
+    public void updateNoteValuesInStep2(Cell cell1, Cell cell2) {
+        for (Cell cell : noneValueCellList) {
+            if (cell.inSameRow(cell1) && cell.inSameRow(cell2)) {
+                cell.filterByUnrelatedCell(cell1);
+            }
+            if (cell.inSameColumn(cell1) && cell.inSameColumn(cell2)) {
+                cell.filterByUnrelatedCell(cell1);
+            }
+            if (cell.inSameZone(cell1) && cell.inSameZone(cell2)) {
+                cell.filterByUnrelatedCell(cell1);
+            }
+        }
+    }
+
+    public void step3() {
+        int size = noneValueCellList.size();
+        Cell cell1, cell2, cell3;
+        for (int i = 0; i < size; i++) {
+            cell1 = noneValueCellList.get(i);
+            if (cell1.hasNumberValuesInNote(3)) {
+                for (int j = i + 1; j < size; j++) {
+                    cell2 = noneValueCellList.get(j);
+                    if (cell2.hasNumberValuesInNote(3)) {
+                        for (int k = j + 1; k < size; k++) {
+                            cell3 = noneValueCellList.get(k);
+                            if (cell1.hasSameNoteValuesWith(cell2) && cell1.relateToCell(cell2)
+                                    && cell2.hasSameNoteValuesWith(cell3) && cell2.relateToCell(cell3)) {
+                                updateNoteValuesInStep3(cell1, cell2, cell3);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    public void updateNoteValuesInStep3(Cell cell1, Cell cell2, Cell cell3) {
+        for (Cell cell : noneValueCellList) {
+            if (cell.inSameRow(cell1) && cell.inSameRow(cell2) && cell.inSameRow(cell3)) {
+                cell.filterByUnrelatedCell(cell1);
+            }
+            if (cell.inSameColumn(cell1) && cell.inSameColumn(cell2) && cell.inSameRow(cell3)) {
+                cell.filterByUnrelatedCell(cell1);
+            }
+            if (cell.inSameZone(cell1) && cell.inSameZone(cell2) && cell.inSameZone(cell3)) {
+                cell.filterByUnrelatedCell(cell1);
+            }
+        }
+    }
 
     public void resolve() {
         note();
+        int previousSize = 81;
         while (noneValueCellList.size() > 0) {
             step1();
+            step2();
             show();
+            if (noneValueCellList.size() == previousSize) {
+                step3();
+            } else {
+                previousSize = noneValueCellList.size();
+            }
         }
     }
 
@@ -165,20 +229,19 @@ public class Matrix {
 
 
     private static int[][] matrixValue = {
-            {0, 0, 0, 0, 0, 5, 4, 0, 9},
-            {4, 5, 1, 0, 0, 2, 3, 0, 0},
-            {9, 8, 2, 0, 0, 0, 5, 6, 1},
-            {6, 0, 7, 0, 0, 0, 9, 8, 0},
-            {0, 0, 3, 4, 6, 0, 0, 0, 0},
-            {5, 0, 0, 2, 8, 7, 0, 1, 0},
-            {0, 4, 0, 0, 7, 0, 0, 9, 6},
-            {3, 0, 0, 0, 0, 0, 7, 0, 0},
-            {0, 0, 5, 9, 4, 6, 8, 0, 2},
+            {0, 4, 0, 0, 0, 7, 8, 0, 2},
+            {1, 0, 0, 0, 9, 0, 0, 0, 5},
+            {0, 0, 0, 0, 8, 4, 0, 0, 0},
+            {0, 5, 0, 0, 7, 2, 0, 0, 0},
+            {0, 0, 0, 0, 0, 0, 0, 0, 0},
+            {0, 8, 7, 5, 4, 9, 0, 0, 0},
+            {6, 9, 0, 0, 0, 0, 0, 0, 0},
+            {0, 0, 0, 0, 0, 0, 0, 6, 1},
+            {0, 0, 5, 0, 0, 0, 4, 0, 0},
     };
 
     public static void main(String[] args) {
         Matrix matrix = new Matrix(matrixValue);
-        matrix.show();
         matrix.resolve();
     }
 
