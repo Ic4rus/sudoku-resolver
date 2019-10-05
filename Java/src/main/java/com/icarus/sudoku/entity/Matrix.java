@@ -110,7 +110,8 @@ public class Matrix {
                     relatedCell.filterByRelatedCell(noneValueCell);
                 }
                 noneValueCellIterator.remove();
-            } else {
+            } // The only cell has this value
+            else {
                 relatedCellList = findRelatedCell(noneValueCell);
                 HashSet<Integer> noteValues = noneValueCell.getNoteValues();
                 boolean isExists;
@@ -173,11 +174,10 @@ public class Matrix {
             if (cell1.hasNumberValuesInNote(3)) {
                 for (int j = i + 1; j < size; j++) {
                     cell2 = noneValueCellList.get(j);
-                    if (cell2.hasNumberValuesInNote(3)) {
+                    if (cell1.hasSameNoteValuesWith(cell2) && cell1.relateToCell(cell2)) {
                         for (int k = j + 1; k < size; k++) {
                             cell3 = noneValueCellList.get(k);
-                            if (cell1.hasSameNoteValuesWith(cell2) && cell1.relateToCell(cell2)
-                                    && cell2.hasSameNoteValuesWith(cell3) && cell2.relateToCell(cell3)) {
+                            if (cell2.hasSameNoteValuesWith(cell3) && cell2.relateToCell(cell3)) {
                                 updateNoteValuesInStep3(cell1, cell2, cell3);
                             }
                         }
@@ -203,7 +203,7 @@ public class Matrix {
 
     public void resolve() {
         note();
-        int previousSize = 81;
+        int previousSize = noneValueCellList.size();
         while (noneValueCellList.size() > 0) {
             step1();
             step2();
@@ -229,15 +229,15 @@ public class Matrix {
 
 
     private static int[][] matrixValue = {
-            {0, 4, 0, 0, 0, 7, 8, 0, 2},
-            {1, 0, 0, 0, 9, 0, 0, 0, 5},
-            {0, 0, 0, 0, 8, 4, 0, 0, 0},
-            {0, 5, 0, 0, 7, 2, 0, 0, 0},
-            {0, 0, 0, 0, 0, 0, 0, 0, 0},
-            {0, 8, 7, 5, 4, 9, 0, 0, 0},
-            {6, 9, 0, 0, 0, 0, 0, 0, 0},
-            {0, 0, 0, 0, 0, 0, 0, 6, 1},
-            {0, 0, 5, 0, 0, 0, 4, 0, 0},
+            {6, 0, 0, 0, 0, 5, 0, 0, 0},
+            {0, 0, 0, 3, 0, 9, 0, 5, 0},
+            {0, 0, 0, 0, 4, 0, 0, 6, 0},
+            {4, 0, 3, 0, 0, 0, 0, 0, 0},
+            {0, 8, 0, 7, 0, 0, 2, 0, 0},
+            {0, 0, 0, 0, 0, 1, 7, 0, 0},
+            {0, 0, 0, 0, 9, 0, 0, 0, 6},
+            {0, 0, 5, 0, 2, 0, 8, 4, 9},
+            {0, 4, 0, 0, 0, 3, 0, 0, 0},
     };
 
     public static void main(String[] args) {
