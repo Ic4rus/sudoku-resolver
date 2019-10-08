@@ -73,6 +73,10 @@ public class Cell {
         this.noteValues = noteValues;
     }
 
+    public boolean isNotFilled() {
+        return this.value == 0;
+    }
+
     public boolean relateToCell(Cell targetCell) {
         return this.id != targetCell.getId()
                 && (this.row == targetCell.getRow()

@@ -201,6 +201,33 @@ public class Matrix {
         }
     }
 
+    /**
+     * Remove note values of other cells in zone if it have 3 cells on the same row or column that have note values
+     * that other cells do not have on the row or column
+     */
+    public void step4() {
+        // Row
+        Cell cell, rightCell1, rightCell2;
+        for (int row = 0; row < matrixSize; row++) {
+            for (int column = 0; column < matrixSize; column = column + blockSize) {
+                cell = cells[row][column];
+                // The cell does not fill
+                if (cell.isNotFilled()) {
+                    rightCell1 = cells[row][column + 1];
+                    if (rightCell1.isNotFilled()) {
+                        rightCell2 = cells[row][column + 2];
+                        if (rightCell2.isNotFilled()) {
+                            for (int i = 0; i < matrixSize; i++) {
+
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+    }
+
     public void resolve() {
         note();
         int previousSize = noneValueCellList.size();
@@ -216,28 +243,16 @@ public class Matrix {
         }
     }
 
-
-
-
-
-
-
-
-
-
-
-
-
     private static int[][] matrixValue = {
-            {6, 0, 0, 0, 0, 5, 0, 0, 0},
-            {0, 0, 0, 3, 0, 9, 0, 5, 0},
-            {0, 0, 0, 0, 4, 0, 0, 6, 0},
-            {4, 0, 3, 0, 0, 0, 0, 0, 0},
-            {0, 8, 0, 7, 0, 0, 2, 0, 0},
-            {0, 0, 0, 0, 0, 1, 7, 0, 0},
-            {0, 0, 0, 0, 9, 0, 0, 0, 6},
-            {0, 0, 5, 0, 2, 0, 8, 4, 9},
-            {0, 4, 0, 0, 0, 3, 0, 0, 0},
+            {0, 0, 0, 8, 7, 1, 0, 2, 0},
+            {0, 0, 0, 3, 0, 9, 8, 0, 0},
+            {0, 9, 8, 2, 0, 0, 0, 0, 0},
+            {7, 8, 0, 9, 0, 0, 3, 0, 0},
+            {0, 0, 0, 0, 0, 7, 0, 0, 0},
+            {0, 5, 0, 0, 0, 3, 0, 0, 0},
+            {9, 7, 4, 1, 3, 2, 6, 8, 5},
+            {0, 0, 0, 0, 0, 0, 0, 0, 9},
+            {2, 0, 0, 0, 9, 0, 0, 0, 4},
     };
 
     public static void main(String[] args) {
