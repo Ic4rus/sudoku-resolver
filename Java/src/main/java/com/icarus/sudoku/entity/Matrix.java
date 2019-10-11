@@ -103,6 +103,8 @@ public class Matrix {
         List<Cell> relatedCellList;
         while (noneValueCellIterator.hasNext()) {
             noneValueCell = noneValueCellIterator.next();
+            noneValueCell.show();
+            // Auto fill if there is only one note value
             selfFillingSuccess = noneValueCell.selfFilling();
             if (selfFillingSuccess) {
                 relatedCellList = findRelatedCell(noneValueCell);
@@ -110,7 +112,7 @@ public class Matrix {
                     relatedCell.filterByRelatedCell(noneValueCell);
                 }
                 noneValueCellIterator.remove();
-            } // The only cell has this value
+            } // The cell have many note values
             else {
                 relatedCellList = findRelatedCell(noneValueCell);
                 HashSet<Integer> noteValues = noneValueCell.getNoteValues();
@@ -135,6 +137,68 @@ public class Matrix {
             }
         }
     }
+
+//    /**
+//     * The only cell have this note value in row/column/zone
+//     *
+//     * @return
+//     */
+//    public boolean findUniqueNoteValueOfCell(Cell sourceCell) {
+//
+//        HashSet<Integer> noteValues = sourceCell.getNoteValues();
+//        // The list of cell in zone
+//        List<Cell> cellsInZone = findNoneValueCells(sourceCell, true, false, false, true, false);
+//        List<Cell> cellsInRow = findNoneValueCells(sourceCell, false, true, false, true, false);
+//        List<Cell> cellsInColumn = findNoneValueCells(sourceCell, false, false, true, true, false);
+//        for (Integer noteValue : noteValues) {
+//            for (Cell cell : cellsInZone) {
+//
+//            }
+//            for (Cell cell : cellsInRow) {
+//
+//            }
+//            for (Cell cell : cellsInColumn) {
+//
+//            }
+//        }
+//        return false;
+//    }
+//
+//    /**
+//     * Find none value cells by condition
+//     *
+//     * @param sourceCell        the cell to start find
+//     * @param inZone            <code>true</code> the cell in zone
+//     *                          <code>false</code> the cell out zone
+//     * @param inRow             <code>true</code> the cell on the row
+//     *                          <code>false</code> the cell on the other row
+//     * @param inColumn          <code>true</code> the cell on the column
+//     *                          <code>false</code> the cell on the other column
+//     * @param isRelated         <code>true</code> inZone || inRow || inColumn
+//     *                          <code>false</code> inZone && inRow && inColumn
+//     * @param includeSourceCell
+//     * @return
+//     */
+//    public List<Cell> findNoneValueCells(Cell sourceCell, boolean inZone, boolean inRow, boolean inColumn,
+//                                         boolean isRelated, boolean includeSourceCell) {
+//        List<Cell> cellList = new ArrayList<>();
+//        if (noneValueCellList == null || noneValueCellList.isEmpty()) {
+//            return cellList;
+//        }
+//        int zone = sourceCell.getZone();
+//        int row = sourceCell.getRow();
+//        int column = sourceCell.getColumn();
+//        boolean satisfyZone, satisfyRow, satisfyColumn;
+//        for (Cell cell : noneValueCellList) {
+//            satisfyZone = (cell.getZone() == zone) == inZone;
+//            satisfyRow = (cell.getRow() == row) == inRow;
+//            satisfyColumn = (cell.getColumn() == column) == inColumn;
+//            if () {
+//                cellList.add(cell);
+//            }
+//        }
+//        return cellList;
+//    }
 
     public void step2() {
         int size = noneValueCellList.size();
@@ -202,45 +266,122 @@ public class Matrix {
     }
 
     /**
-     * Remove note values of other cells in zone if it have 3 cells on the same row or column that have note values
-     * that other cells do not have on the row or column
+     * Find none value cell
+     *
+     * @param zone    the index of zone
+     * @param inZone  true - in zone, false - out zone
+     * @param isRow   true - row, false - column
+     * @param index   the index of row/column
+     * @param isEqual the cell on the row/column
+     * @return
      */
-    public void step4() {
-        // Row
-        Cell cell, rightCell1, rightCell2;
-        for (int row = 0; row < matrixSize; row++) {
-            for (int column = 0; column < matrixSize; column = column + blockSize) {
-                cell = cells[row][column];
-                // The cell does not fill
-                if (cell.isNotFilled()) {
-                    rightCell1 = cells[row][column + 1];
-                    if (rightCell1.isNotFilled()) {
-                        rightCell2 = cells[row][column + 2];
-                        if (rightCell2.isNotFilled()) {
-                            for (int i = 0; i < matrixSize; i++) {
+    public List<Cell> findNoneValueCells(int zone, boolean inZone, boolean isRow, int index, boolean isEqual) {
+        List<Cell> cellList = new ArrayList<>();
+        int cellIndex;
+        for (Cell cell : noneValueCellList) {
+            cellIndex = isRow ? cell.getRow() : cell.getColumn();
+            if ((cell.getZone() == zone) == inZone && (cellIndex == index) == isEqual) {
+                cellList.add(cell);
+            }
+        }
+        return cellList;
+    }
 
-                            }
-                        }
-                    }
+    /**
+     *
+     * @param zone
+     * @param isRow
+     * @param index
+     */
+    public void updateNoteValuesInStep4(int zone, boolean isRow, int index) {
+
+        Set<Integer> noteValuesIsNotDuplicate = new HashSet<>();
+        List<Cell> cellsInZone = findNoneValueCells(zone, true, isRow, index, true);
+        List<Cell> cellsOutZone = findNoneValueCells(zone, false, isRow, index, true);
+        if (cellsInZone == null || cellsInZone.isEmpty() || cellsOutZone == null || cellsOutZone.isEmpty()) {
+            return;
+        }
+        Set<Integer> noteValuesInZone = new HashSet<>();
+        Set<Integer> noteValuesOutZone = new HashSet<>();
+        HashSet<Integer> noteValues;
+        for (Cell cell : cellsInZone) {
+            noteValues = cell.getNoteValues();
+            if (noteValues != null && !noteValues.isEmpty()) {
+                noteValuesInZone.addAll(noteValues);
+            }
+        }
+        for (Cell cell : cellsOutZone) {
+            noteValues = cell.getNoteValues();
+            if (noteValues != null && !noteValues.isEmpty()) {
+                noteValuesOutZone.addAll(noteValues);
+            }
+        }
+        for (Integer noteValue : noteValuesInZone) {
+            if (!noteValuesOutZone.contains(noteValue)) {
+                noteValuesIsNotDuplicate.add(noteValue);
+            }
+        }
+        if (!noteValuesIsNotDuplicate.isEmpty()) {
+            List<Cell> otherCellsInZone = findNoneValueCells(zone, true, isRow, index, false);
+            if (otherCellsInZone != null && !otherCellsInZone.isEmpty()) {
+                for (Cell cell : otherCellsInZone) {
+                    cell.removeNoteValues(noteValuesIsNotDuplicate);
                 }
             }
         }
+    }
 
+    public int checkTotalNoteValues() {
+        int total = 0;
+        for (Cell cell : noneValueCellList) {
+            total += cell.getNoteValues().size();
+        }
+        return total;
+    }
+
+    /**
+     * Remove note values of other cells in zone if it have cells on the same row or column that have note values
+     * that other cells do not have on the row or column
+     */
+    public void step4() {
+        int startRow, startColumn;
+        List<Cell> cellsInZone, cellsOutZone;
+        Set<Integer> noteValuesIsNotDuplicate;
+        // Loop each zone
+        for (int zone = 0; zone < matrixSize; zone++) {
+            // Loop each row in zone
+            startRow = (zone / blockSize) * blockSize;
+            for (int row = startRow; row < startRow + blockSize; row++) {
+                updateNoteValuesInStep4(zone, true, row);
+            }
+            // Loop each column in zone
+            startColumn = (zone % blockSize) * blockSize;
+            for (int column = startColumn; column < startColumn + blockSize; column++) {
+                updateNoteValuesInStep4(zone, false, column);
+            }
+        }
+        show();
     }
 
     public void resolve() {
         note();
-        int previousSize = noneValueCellList.size();
-        while (noneValueCellList.size() > 0) {
-            step1();
-            step2();
-            show();
-            if (noneValueCellList.size() == previousSize) {
-                step3();
-            } else {
-                previousSize = noneValueCellList.size();
-            }
-        }
+        show();
+//        checkTotalNoteValues();
+//        step4();
+        step1();
+
+
+//        int previousSize = noneValueCellList.size();
+//        while (noneValueCellList.size() > 0) {
+//            step1();
+//            step2();
+//            show();
+//            if (noneValueCellList.size() == previousSize) {
+//                step3();
+//            } else {
+//                previousSize = noneValueCellList.size();
+//            }
+//        }
     }
 
     private static int[][] matrixValue = {

@@ -1,6 +1,7 @@
 package com.icarus.sudoku.entity;
 
 import java.util.HashSet;
+import java.util.Set;
 
 public class Cell {
 
@@ -73,7 +74,15 @@ public class Cell {
         this.noteValues = noteValues;
     }
 
-    public boolean isNotFilled() {
+    public void show() {
+        System.out.println(String.format("___cell: zone = %d, row = %d, column = %d", this.zone, this.row, this.column));
+    }
+
+    public boolean equal(Cell targetCell) {
+        return this.id == targetCell.getId();
+    }
+
+    public boolean isNoneValue() {
         return this.value == 0;
     }
 
@@ -135,6 +144,12 @@ public class Cell {
     public void filterByUnrelatedCell(Cell targetCell) {
         if (this.value == 0 && targetCell.getValue() == 0) {
             this.noteValues.removeAll(targetCell.getNoteValues());
+        }
+    }
+
+    public void removeNoteValues(Set<Integer> removalNoteValues) {
+        if (this.noteValues != null && !this.noteValues.isEmpty()) {
+            this.noteValues.removeAll(removalNoteValues);
         }
     }
 
