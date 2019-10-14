@@ -103,7 +103,6 @@ public class Matrix {
         List<Cell> relatedCellList;
         while (noneValueCellIterator.hasNext()) {
             noneValueCell = noneValueCellIterator.next();
-            noneValueCell.show();
             // Auto fill if there is only one note value
             selfFillingSuccess = noneValueCell.selfFilling();
             if (selfFillingSuccess) {
@@ -114,91 +113,84 @@ public class Matrix {
                 noneValueCellIterator.remove();
             } // The cell have many note values
             else {
-                relatedCellList = findRelatedCell(noneValueCell);
-                HashSet<Integer> noteValues = noneValueCell.getNoteValues();
-                boolean isExists;
-                for (Integer noteValue : noteValues) {
-                    isExists = false;
+                int uniqueNoteValue = findUniqueNoteValueOfCell(noneValueCell);
+                if (uniqueNoteValue != 0) {
+                    noneValueCell.show();
+                    System.out.println("___uniqueNoteValue: " + uniqueNoteValue);
+                    noneValueCell.fillValue(uniqueNoteValue);
+                    relatedCellList = findRelatedCell(noneValueCell);
                     for (Cell relatedCell : relatedCellList) {
-                        if (relatedCell.containValueInNote(noteValue)) {
-                            isExists = true;
-                            break;
-                        }
+                        relatedCell.filterByRelatedCell(noneValueCell);
                     }
-                    if (!isExists) {
-                        noneValueCell.fillValue(noteValue);
-                        for (Cell relatedCell : relatedCellList) {
-                            relatedCell.filterByRelatedCell(noneValueCell);
-                        }
-                        noneValueCellIterator.remove();
-                        break;
-                    }
+                    noneValueCellIterator.remove();
                 }
             }
         }
     }
 
-//    /**
-//     * The only cell have this note value in row/column/zone
-//     *
-//     * @return
-//     */
-//    public boolean findUniqueNoteValueOfCell(Cell sourceCell) {
-//
-//        HashSet<Integer> noteValues = sourceCell.getNoteValues();
-//        // The list of cell in zone
-//        List<Cell> cellsInZone = findNoneValueCells(sourceCell, true, false, false, true, false);
-//        List<Cell> cellsInRow = findNoneValueCells(sourceCell, false, true, false, true, false);
-//        List<Cell> cellsInColumn = findNoneValueCells(sourceCell, false, false, true, true, false);
-//        for (Integer noteValue : noteValues) {
-//            for (Cell cell : cellsInZone) {
-//
-//            }
-//            for (Cell cell : cellsInRow) {
-//
-//            }
-//            for (Cell cell : cellsInColumn) {
-//
-//            }
-//        }
-//        return false;
-//    }
-//
-//    /**
-//     * Find none value cells by condition
-//     *
-//     * @param sourceCell        the cell to start find
-//     * @param inZone            <code>true</code> the cell in zone
-//     *                          <code>false</code> the cell out zone
-//     * @param inRow             <code>true</code> the cell on the row
-//     *                          <code>false</code> the cell on the other row
-//     * @param inColumn          <code>true</code> the cell on the column
-//     *                          <code>false</code> the cell on the other column
-//     * @param isRelated         <code>true</code> inZone || inRow || inColumn
-//     *                          <code>false</code> inZone && inRow && inColumn
-//     * @param includeSourceCell
-//     * @return
-//     */
-//    public List<Cell> findNoneValueCells(Cell sourceCell, boolean inZone, boolean inRow, boolean inColumn,
-//                                         boolean isRelated, boolean includeSourceCell) {
-//        List<Cell> cellList = new ArrayList<>();
-//        if (noneValueCellList == null || noneValueCellList.isEmpty()) {
-//            return cellList;
-//        }
-//        int zone = sourceCell.getZone();
-//        int row = sourceCell.getRow();
-//        int column = sourceCell.getColumn();
-//        boolean satisfyZone, satisfyRow, satisfyColumn;
-//        for (Cell cell : noneValueCellList) {
-//            satisfyZone = (cell.getZone() == zone) == inZone;
-//            satisfyRow = (cell.getRow() == row) == inRow;
-//            satisfyColumn = (cell.getColumn() == column) == inColumn;
-//            if () {
-//                cellList.add(cell);
-//            }
-//        }
-//        return cellList;
-//    }
+    /**
+     * The only cell have this note value in row/column/zone
+     *
+     * @return
+     */
+    public int findUniqueNoteValueOfCell(Cell sourceCell) {
+
+        // The list of cell in zone
+        List<Cell> otherCellsInRow = findNoneValueCells(sourceCell, Relation.NOT_ME, Relation.SAME_ROW);
+        List<Cell> otherCellsInColumn = findNoneValueCells(sourceCell, Relation.NOT_ME, Relation.SAME_COLUMN);
+        List<Cell> otherCellsInZone = findNoneValueCells(sourceCell, Relation.NOT_ME, Relation.SAME_ZONE);
+        HashSet<Integer> noteValues = sourceCell.getNoteValues();
+        for (Integer noteValue : noteValues) {
+            if (!existsNoteValueInCells(noteValue, otherCellsInRow)) {
+                return noteValue;
+            }
+            if (!existsNoteValueInCells(noteValue, otherCellsInColumn)) {
+                return noteValue;
+            }
+            if (!existsNoteValueInCells(noteValue, otherCellsInZone)) {
+                return noteValue;
+            }
+        }
+        return 0;
+    }
+
+    /**
+     * Find none value cells by condition
+     *
+     * @param sourceCell the cell to start find
+     * @param relations  the list of relation
+     * @return
+     */
+    public List<Cell> findNoneValueCells(Cell sourceCell, Relation... relations) {
+        List<Cell> cellList = new ArrayList<>();
+        if (noneValueCellList == null || noneValueCellList.isEmpty()) {
+            return cellList;
+        }
+        for (Cell cell : noneValueCellList) {
+            if (sourceCell.inRelationship(cell, relations)) {
+                cellList.add(cell);
+            }
+        }
+        return cellList;
+    }
+
+    /**
+     *
+     * @param noteValue
+     * @param cellList
+     * @return
+     */
+    public boolean existsNoteValueInCells(int noteValue, List<Cell> cellList) {
+        if (cellList == null || cellList.isEmpty()) {
+            return false;
+        }
+        for (Cell cell : cellList) {
+            if (cell.containValueInNote(noteValue)) {
+                return true;
+            }
+        }
+        return false;
+    }
 
     public void step2() {
         int size = noneValueCellList.size();
@@ -275,10 +267,12 @@ public class Matrix {
      * @param isEqual the cell on the row/column
      * @return
      */
-    public List<Cell> findNoneValueCells(int zone, boolean inZone, boolean isRow, int index, boolean isEqual) {
+    public List<Cell> findNoneValueCells(int zone, Boolean inZone, boolean isRow, int index, boolean isEqual) {
         List<Cell> cellList = new ArrayList<>();
         int cellIndex;
+        boolean zoneCondition;
         for (Cell cell : noneValueCellList) {
+            zoneCondition = inZone == null || inZone == (cell.getZone() == zone);
             cellIndex = isRow ? cell.getRow() : cell.getColumn();
             if ((cell.getZone() == zone) == inZone && (cellIndex == index) == isEqual) {
                 cellList.add(cell);
@@ -288,7 +282,6 @@ public class Matrix {
     }
 
     /**
-     *
      * @param zone
      * @param isRow
      * @param index
@@ -366,34 +359,30 @@ public class Matrix {
     public void resolve() {
         note();
         show();
-//        checkTotalNoteValues();
-//        step4();
-        step1();
-
-
-//        int previousSize = noneValueCellList.size();
-//        while (noneValueCellList.size() > 0) {
-//            step1();
-//            step2();
-//            show();
-//            if (noneValueCellList.size() == previousSize) {
-//                step3();
-//            } else {
-//                previousSize = noneValueCellList.size();
-//            }
-//        }
+        int previousSize = noneValueCellList.size();
+        while (noneValueCellList.size() > 0) {
+            step1();
+            step2();
+            show();
+            if (noneValueCellList.size() == previousSize) {
+                step3();
+                step4();
+            } else {
+                previousSize = noneValueCellList.size();
+            }
+        }
     }
 
     private static int[][] matrixValue = {
-            {0, 0, 0, 8, 7, 1, 0, 2, 0},
-            {0, 0, 0, 3, 0, 9, 8, 0, 0},
+            {0, 0, 0, 8, 7, 1, 9, 2, 0},
+            {0, 2, 7, 3, 0, 9, 8, 0, 0},
             {0, 9, 8, 2, 0, 0, 0, 0, 0},
             {7, 8, 0, 9, 0, 0, 3, 0, 0},
             {0, 0, 0, 0, 0, 7, 0, 0, 0},
             {0, 5, 0, 0, 0, 3, 0, 0, 0},
             {9, 7, 4, 1, 3, 2, 6, 8, 5},
-            {0, 0, 0, 0, 0, 0, 0, 0, 9},
-            {2, 0, 0, 0, 9, 0, 0, 0, 4},
+            {8, 0, 0, 0, 0, 0, 2, 0, 9},
+            {2, 0, 0, 0, 9, 8, 0, 0, 4},
     };
 
     public static void main(String[] args) {

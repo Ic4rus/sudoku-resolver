@@ -153,4 +153,40 @@ public class Cell {
         }
     }
 
+    public boolean inRelationship(Cell targetCell, Relation... relations) {
+
+        boolean result = false;
+        for (Relation relation : relations) {
+            switch (relation) {
+                case SAME_ROW:
+                    result = this.row == targetCell.getRow();
+                    break;
+                case SAME_COLUMN:
+                    result = this.column == targetCell.getColumn();
+                    break;
+                case SAME_ZONE:
+                    result = this.zone == targetCell.getZone();
+                    break;
+                case NOT_ME:
+                    result = this.id != targetCell.getId();
+                    break;
+                case OTHER_ROW:
+                    result = this.row != targetCell.getRow();
+                    break;
+                case OTHER_COLUMN:
+                    result = this.column != targetCell.getColumn();
+                    break;
+                case OTHER_ZONE:
+                    result = this.zone != targetCell.getZone();
+                    break;
+                default:
+                    result = false;
+            }
+            if (!result) {
+                break;
+            }
+        }
+        return result;
+    }
+
 }
