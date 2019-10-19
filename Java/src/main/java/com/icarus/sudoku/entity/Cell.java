@@ -15,7 +15,11 @@ public class Cell {
 
     private int value;
 
+    private boolean checked;
+
     private HashSet<Integer> noteValues;
+
+    private HashSet<Integer> removalNoteValues;
 
     public Cell(int id, int row, int column, int zone, int value, HashSet<Integer> noteValues) {
         this.id = id;
@@ -66,6 +70,14 @@ public class Cell {
         this.value = value;
     }
 
+    public boolean isChecked() {
+        return checked;
+    }
+
+    public void setChecked(boolean checked) {
+        this.checked = checked;
+    }
+
     public HashSet<Integer> getNoteValues() {
         return noteValues;
     }
@@ -74,12 +86,12 @@ public class Cell {
         this.noteValues = noteValues;
     }
 
-    public void show() {
-        System.out.println(String.format("___cell: zone = %d, row = %d, column = %d", this.zone, this.row, this.column));
+    public HashSet<Integer> getRemovalNoteValues() {
+        return removalNoteValues;
     }
 
-    public boolean equal(Cell targetCell) {
-        return this.id == targetCell.getId();
+    public void setRemovalNoteValues(HashSet<Integer> removalNoteValues) {
+        this.removalNoteValues = removalNoteValues;
     }
 
     public boolean isNoneValue() {
@@ -93,9 +105,9 @@ public class Cell {
                 || this.zone == targetCell.getZone());
     }
 
-    public void filterByRelatedCell(Cell relatedCell) {
-        if (this.value == 0 && relatedCell.getValue() > 0) {
-            this.noteValues.remove(relatedCell.getValue());
+    public void filterByRelevantCell(Cell relevantCell) {
+        if (this.value == 0 && relevantCell.getValue() > 0) {
+            this.noteValues.remove(relevantCell.getValue());
         }
     }
 
@@ -120,31 +132,9 @@ public class Cell {
         }
     }
 
-    public boolean hasNumberValuesInNote(int n) {
-        return this.noteValues != null && this.noteValues.size() == n;
-    }
-
     public boolean hasSameNoteValuesWith(Cell targetCell) {
         return this.noteValues != null
                 && this.noteValues.equals(targetCell.getNoteValues());
-    }
-
-    public boolean inSameRow(Cell targetCell) {
-        return this.id != targetCell.getId() && this.row == targetCell.getRow();
-    }
-
-    public boolean inSameColumn(Cell targetCell) {
-        return this.id != targetCell.getId() && this.column == targetCell.getColumn();
-    }
-
-    public boolean inSameZone(Cell targetCell) {
-        return this.id != targetCell.getId() && this.zone == targetCell.getZone();
-    }
-
-    public void filterByUnrelatedCell(Cell targetCell) {
-        if (this.value == 0 && targetCell.getValue() == 0) {
-            this.noteValues.removeAll(targetCell.getNoteValues());
-        }
     }
 
     public void removeNoteValues(Set<Integer> removalNoteValues) {
@@ -153,11 +143,28 @@ public class Cell {
         }
     }
 
+    public void addRemovalNoteValues(HashSet<Integer> removalNoteValues) {
+        if (this.removalNoteValues == null) {
+            this.removalNoteValues = new HashSet<>();
+        }
+        this.removalNoteValues.addAll(removalNoteValues);
+    }
+
+    public void removeNoteValues() {
+        if (this.removalNoteValues != null && !this.removalNoteValues.isEmpty()) {
+            removeNoteValues(removalNoteValues);
+        }
+        this.removalNoteValues = null;
+    }
+
     public boolean inRelationship(Cell targetCell, Relation... relations) {
 
         boolean result = false;
         for (Relation relation : relations) {
             switch (relation) {
+                case VALUE:
+                    result = targetCell.getValue() > 0;
+                    break;
                 case SAME_ROW:
                     result = this.row == targetCell.getRow();
                     break;
@@ -167,8 +174,14 @@ public class Cell {
                 case SAME_ZONE:
                     result = this.zone == targetCell.getZone();
                     break;
+                case RELEVANT:
+                    result = this.row == targetCell.getRow() || this.column == targetCell.getColumn() || this.zone == targetCell.getZone();
+                    break;
                 case NOT_ME:
                     result = this.id != targetCell.getId();
+                    break;
+                case NONE_VALUE:
+                    result = targetCell.getValue() == 0;
                     break;
                 case OTHER_ROW:
                     result = this.row != targetCell.getRow();

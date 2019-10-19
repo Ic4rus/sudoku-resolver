@@ -71,57 +71,52 @@ public class Matrix {
         }
     }
 
-    public List<Cell> findRelatedCell(Cell sourceCell) {
-        List<Cell> relatedCellList = new ArrayList<>();
-        Cell targetCell;
-        for (int row = 0; row < matrixSize; row++) {
-            for (int column = 0; column < matrixSize; column++) {
-                targetCell = cells[row][column];
-                if (sourceCell.relateToCell(targetCell)) {
-                    relatedCellList.add(targetCell);
-                }
-            }
-        }
-        return relatedCellList;
-    }
-
     public void note() {
-        List<Cell> relatedCellList;
-        for (Cell noneValueCell : noneValueCellList) {
-            relatedCellList = findRelatedCell(noneValueCell);
-            for (Cell relatedCell : relatedCellList) {
-                noneValueCell.filterByRelatedCell(relatedCell);
-            }
+        for (Cell cell : noneValueCellList) {
+            findInvertRelevantCells(cell);
         }
     }
 
+    /**
+     * Find relevant cells which has value is invert of source cell
+     *
+     * @param sourceCell
+     */
+    public void findInvertRelevantCells(Cell sourceCell) {
+
+        Relation valueRelation = sourceCell.isNoneValue() ? Relation.VALUE : Relation.NONE_VALUE;
+        List<Cell> relevantCellList = findCells(sourceCell, valueRelation, Relation.NOT_ME, Relation.RELEVANT);
+        relevantCellList.forEach(cell -> {
+            if (valueRelation == Relation.NONE_VALUE) {
+                cell.filterByRelevantCell(sourceCell);
+            } else {
+                sourceCell.filterByRelevantCell(cell);
+            }
+        });
+    }
+
+    /**
+     * Find value for cell have only one note value or have unique note value in row/column/zone
+     *
+     */
     public void step1() {
 
         Iterator<Cell> noneValueCellIterator = noneValueCellList.iterator();
-        Cell noneValueCell;
+        Cell cell;
         boolean selfFillingSuccess;
-        List<Cell> relatedCellList;
         while (noneValueCellIterator.hasNext()) {
-            noneValueCell = noneValueCellIterator.next();
+            cell = noneValueCellIterator.next();
             // Auto fill if there is only one note value
-            selfFillingSuccess = noneValueCell.selfFilling();
+            selfFillingSuccess = cell.selfFilling();
             if (selfFillingSuccess) {
-                relatedCellList = findRelatedCell(noneValueCell);
-                for (Cell relatedCell : relatedCellList) {
-                    relatedCell.filterByRelatedCell(noneValueCell);
-                }
+                findInvertRelevantCells(cell);
                 noneValueCellIterator.remove();
             } // The cell have many note values
             else {
-                int uniqueNoteValue = findUniqueNoteValueOfCell(noneValueCell);
+                int uniqueNoteValue = findUniqueNoteValueOfCell(cell);
                 if (uniqueNoteValue != 0) {
-                    noneValueCell.show();
-                    System.out.println("___uniqueNoteValue: " + uniqueNoteValue);
-                    noneValueCell.fillValue(uniqueNoteValue);
-                    relatedCellList = findRelatedCell(noneValueCell);
-                    for (Cell relatedCell : relatedCellList) {
-                        relatedCell.filterByRelatedCell(noneValueCell);
-                    }
+                    cell.fillValue(uniqueNoteValue);
+                    findInvertRelevantCells(cell);
                     noneValueCellIterator.remove();
                 }
             }
@@ -136,9 +131,9 @@ public class Matrix {
     public int findUniqueNoteValueOfCell(Cell sourceCell) {
 
         // The list of cell in zone
-        List<Cell> otherCellsInRow = findNoneValueCells(sourceCell, Relation.NOT_ME, Relation.SAME_ROW);
-        List<Cell> otherCellsInColumn = findNoneValueCells(sourceCell, Relation.NOT_ME, Relation.SAME_COLUMN);
-        List<Cell> otherCellsInZone = findNoneValueCells(sourceCell, Relation.NOT_ME, Relation.SAME_ZONE);
+        List<Cell> otherCellsInRow = findCells(sourceCell, Relation.NONE_VALUE, Relation.NOT_ME, Relation.SAME_ROW);
+        List<Cell> otherCellsInColumn = findCells(sourceCell, Relation.NONE_VALUE, Relation.NOT_ME, Relation.SAME_COLUMN);
+        List<Cell> otherCellsInZone = findCells(sourceCell, Relation.NONE_VALUE, Relation.NOT_ME, Relation.SAME_ZONE);
         HashSet<Integer> noteValues = sourceCell.getNoteValues();
         for (Integer noteValue : noteValues) {
             if (!existsNoteValueInCells(noteValue, otherCellsInRow)) {
@@ -155,26 +150,7 @@ public class Matrix {
     }
 
     /**
-     * Find none value cells by condition
-     *
-     * @param sourceCell the cell to start find
-     * @param relations  the list of relation
-     * @return
-     */
-    public List<Cell> findNoneValueCells(Cell sourceCell, Relation... relations) {
-        List<Cell> cellList = new ArrayList<>();
-        if (noneValueCellList == null || noneValueCellList.isEmpty()) {
-            return cellList;
-        }
-        for (Cell cell : noneValueCellList) {
-            if (sourceCell.inRelationship(cell, relations)) {
-                cellList.add(cell);
-            }
-        }
-        return cellList;
-    }
-
-    /**
+     * Check a note value if exists in note values of the list of cell
      *
      * @param noteValue
      * @param cellList
@@ -192,185 +168,148 @@ public class Matrix {
         return false;
     }
 
-    public void step2() {
-        int size = noneValueCellList.size();
-        Cell cell1, cell2;
-        for (int i = 0; i < size; i++) {
-            cell1 = noneValueCellList.get(i);
-            if (cell1.hasNumberValuesInNote(2)) {
-                for (int j = i + 1; j < size; j++) {
-                    cell2 = noneValueCellList.get(j);
-                    if (cell1.hasSameNoteValuesWith(cell2) && cell1.relateToCell(cell2)) {
-                        updateNoteValuesInStep2(cell1, cell2);
-                    }
-                }
-            }
-        }
-    }
-
-    public void updateNoteValuesInStep2(Cell cell1, Cell cell2) {
-        for (Cell cell : noneValueCellList) {
-            if (cell.inSameRow(cell1) && cell.inSameRow(cell2)) {
-                cell.filterByUnrelatedCell(cell1);
-            }
-            if (cell.inSameColumn(cell1) && cell.inSameColumn(cell2)) {
-                cell.filterByUnrelatedCell(cell1);
-            }
-            if (cell.inSameZone(cell1) && cell.inSameZone(cell2)) {
-                cell.filterByUnrelatedCell(cell1);
-            }
-        }
-    }
-
-    public void step3() {
-        int size = noneValueCellList.size();
-        Cell cell1, cell2, cell3;
-        for (int i = 0; i < size; i++) {
-            cell1 = noneValueCellList.get(i);
-            if (cell1.hasNumberValuesInNote(3)) {
-                for (int j = i + 1; j < size; j++) {
-                    cell2 = noneValueCellList.get(j);
-                    if (cell1.hasSameNoteValuesWith(cell2) && cell1.relateToCell(cell2)) {
-                        for (int k = j + 1; k < size; k++) {
-                            cell3 = noneValueCellList.get(k);
-                            if (cell2.hasSameNoteValuesWith(cell3) && cell2.relateToCell(cell3)) {
-                                updateNoteValuesInStep3(cell1, cell2, cell3);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    public void updateNoteValuesInStep3(Cell cell1, Cell cell2, Cell cell3) {
-        for (Cell cell : noneValueCellList) {
-            if (cell.inSameRow(cell1) && cell.inSameRow(cell2) && cell.inSameRow(cell3)) {
-                cell.filterByUnrelatedCell(cell1);
-            }
-            if (cell.inSameColumn(cell1) && cell.inSameColumn(cell2) && cell.inSameRow(cell3)) {
-                cell.filterByUnrelatedCell(cell1);
-            }
-            if (cell.inSameZone(cell1) && cell.inSameZone(cell2) && cell.inSameZone(cell3)) {
-                cell.filterByUnrelatedCell(cell1);
-            }
-        }
-    }
-
     /**
-     * Find none value cell
+     * Find equal cells in row/column/zone
      *
-     * @param zone    the index of zone
-     * @param inZone  true - in zone, false - out zone
-     * @param isRow   true - row, false - column
-     * @param index   the index of row/column
-     * @param isEqual the cell on the row/column
-     * @return
      */
-    public List<Cell> findNoneValueCells(int zone, Boolean inZone, boolean isRow, int index, boolean isEqual) {
-        List<Cell> cellList = new ArrayList<>();
-        int cellIndex;
-        boolean zoneCondition;
+    public void step2() {
+        HashSet<Integer> noteValues;
+        List<Cell> otherCellsInRow, otherCellsInColumn, otherCellsInZone;
+        // Loop each none value cell
         for (Cell cell : noneValueCellList) {
-            zoneCondition = inZone == null || inZone == (cell.getZone() == zone);
-            cellIndex = isRow ? cell.getRow() : cell.getColumn();
-            if ((cell.getZone() == zone) == inZone && (cellIndex == index) == isEqual) {
-                cellList.add(cell);
+            noteValues = cell.getNoteValues();
+            // Skip cell if it has only one note value
+            if (noteValues.size() == 1) {
+                continue;
             }
+            // Find other cells on the same row
+            otherCellsInRow = findCells(cell, Relation.NONE_VALUE, Relation.NOT_ME, Relation.SAME_ROW);
+            findEqualCells(cell, otherCellsInRow);
+
+            // Find other cells on the same column
+            otherCellsInColumn = findCells(cell, Relation.NONE_VALUE, Relation.NOT_ME, Relation.SAME_COLUMN);
+            findEqualCells(cell, otherCellsInColumn);
+
+            // Find other cell in same zone
+            otherCellsInZone = findCells(cell, Relation.NONE_VALUE, Relation.NOT_ME, Relation.SAME_ZONE);
+            findEqualCells(cell, otherCellsInZone);
         }
-        return cellList;
+
+        noneValueCellList.forEach(cell -> cell.removeNoteValues());
     }
 
     /**
-     * @param zone
-     * @param isRow
-     * @param index
+     * Find equal cells in given the list of cell.
+     * If the total number of equal cells (including source cell) equal number of note values,
+     * other cells can not contains this note values.
+     *
+     * @param sourceCell     the source cell
+     * @param targetCellList the other cells in same row/column/zone
      */
-    public void updateNoteValuesInStep4(int zone, boolean isRow, int index) {
-
-        Set<Integer> noteValuesIsNotDuplicate = new HashSet<>();
-        List<Cell> cellsInZone = findNoneValueCells(zone, true, isRow, index, true);
-        List<Cell> cellsOutZone = findNoneValueCells(zone, false, isRow, index, true);
-        if (cellsInZone == null || cellsInZone.isEmpty() || cellsOutZone == null || cellsOutZone.isEmpty()) {
+    public void findEqualCells(Cell sourceCell, List<Cell> targetCellList) {
+        HashSet<Integer> noteValues = sourceCell.getNoteValues();
+        if (targetCellList.size() <= noteValues.size()) {
             return;
         }
-        Set<Integer> noteValuesInZone = new HashSet<>();
-        Set<Integer> noteValuesOutZone = new HashSet<>();
-        HashSet<Integer> noteValues;
-        for (Cell cell : cellsInZone) {
-            noteValues = cell.getNoteValues();
-            if (noteValues != null && !noteValues.isEmpty()) {
-                noteValuesInZone.addAll(noteValues);
+        int count = 1;
+        // Find equal cell
+        for (Cell targetCell : targetCellList) {
+            if (sourceCell.hasSameNoteValuesWith(targetCell)) {
+                targetCell.setChecked(true);
+                count++;
             }
         }
-        for (Cell cell : cellsOutZone) {
-            noteValues = cell.getNoteValues();
-            if (noteValues != null && !noteValues.isEmpty()) {
-                noteValuesOutZone.addAll(noteValues);
-            }
-        }
-        for (Integer noteValue : noteValuesInZone) {
-            if (!noteValuesOutZone.contains(noteValue)) {
-                noteValuesIsNotDuplicate.add(noteValue);
-            }
-        }
-        if (!noteValuesIsNotDuplicate.isEmpty()) {
-            List<Cell> otherCellsInZone = findNoneValueCells(zone, true, isRow, index, false);
-            if (otherCellsInZone != null && !otherCellsInZone.isEmpty()) {
-                for (Cell cell : otherCellsInZone) {
-                    cell.removeNoteValues(noteValuesIsNotDuplicate);
+        if (noteValues.size() == count) {
+            for (Cell targetCell : targetCellList) {
+                if (targetCell.isChecked()) {
+                    targetCell.setChecked(false);
+                } else {
+                    targetCell.addRemovalNoteValues(noteValues);
                 }
             }
         }
-    }
-
-    public int checkTotalNoteValues() {
-        int total = 0;
-        for (Cell cell : noneValueCellList) {
-            total += cell.getNoteValues().size();
-        }
-        return total;
     }
 
     /**
      * Remove note values of other cells in zone if it have cells on the same row or column that have note values
      * that other cells do not have on the row or column
      */
-    public void step4() {
-        int startRow, startColumn;
-        List<Cell> cellsInZone, cellsOutZone;
-        Set<Integer> noteValuesIsNotDuplicate;
-        // Loop each zone
-        for (int zone = 0; zone < matrixSize; zone++) {
-            // Loop each row in zone
-            startRow = (zone / blockSize) * blockSize;
-            for (int row = startRow; row < startRow + blockSize; row++) {
-                updateNoteValuesInStep4(zone, true, row);
-            }
-            // Loop each column in zone
-            startColumn = (zone % blockSize) * blockSize;
-            for (int column = startColumn; column < startColumn + blockSize; column++) {
-                updateNoteValuesInStep4(zone, false, column);
+    public void step3() {
+        noneValueCellList.forEach(cell -> {
+            updateNoteValuesInStep3(cell, Relation.SAME_ROW, Relation.OTHER_ROW);
+            updateNoteValuesInStep3(cell, Relation.SAME_COLUMN, Relation.OTHER_COLUMN);
+        });
+    }
+
+    /**
+     * Update note value for other cells in zone or cells on the same row/column out zone
+     *
+     */
+    public void updateNoteValuesInStep3(Cell sourceCell, Relation sameLine, Relation otherLine) {
+
+        Set<Integer> noteValuesIsNotDuplicate = new HashSet<>();
+        Set<Integer> noteValuesOnlyInZone = new HashSet<>();
+
+        // Get all note values of cells on the same row/column in zone
+        Set<Integer> noteValuesInZone = new HashSet<>();
+        List<Cell> cellsInZone = findCells(sourceCell, Relation.NONE_VALUE, Relation.SAME_ZONE, sameLine);
+        cellsInZone.forEach(cell -> noteValuesInZone.addAll(cell.getNoteValues()));
+
+        // Get all note values of cells on the other row/column in zone
+        Set<Integer> otherNoteValuesInZone = new HashSet<>();
+        List<Cell> otherCellsInZone = findCells(sourceCell, Relation.NONE_VALUE, Relation.SAME_ZONE, otherLine);
+        otherCellsInZone.forEach(cell -> otherNoteValuesInZone.addAll(cell.getNoteValues()));
+
+        // Get all note values of cells on the same row/column out zone
+        Set<Integer> noteValuesOutZone = new HashSet<>();
+        List<Cell> cellsOutZone = findCells(sourceCell, Relation.NONE_VALUE, Relation.OTHER_ZONE, sameLine);
+        cellsOutZone.forEach(cell -> noteValuesOutZone.addAll(cell.getNoteValues()));
+
+        // Note values not exists in cells on the same row/column out zone
+        noteValuesInZone.stream()
+                .filter(noteValue -> !noteValuesOutZone.contains(noteValue))
+                .forEach(noteValue -> noteValuesIsNotDuplicate.add(noteValue));
+        // Remove note values in other cells in zone
+        otherCellsInZone.forEach(cell -> cell.removeNoteValues(noteValuesIsNotDuplicate));
+
+        // Note values not exists in cells on the other row/column in zone
+        noteValuesInZone.stream()
+                .filter(noteValue -> !otherNoteValuesInZone.contains(noteValue))
+                .forEach(noteValue -> noteValuesOnlyInZone.add(noteValue));
+        // Remove note values in cells out zone
+        cellsOutZone.forEach(cell -> cell.removeNoteValues(noteValuesOnlyInZone));
+    }
+
+    /**
+     * Find none value cells by condition
+     *
+     * @param sourceCell the cell to start find
+     * @param relations  the list of relation
+     * @return
+     */
+    public List<Cell> findCells(Cell sourceCell, Relation... relations) {
+        List<Cell> cellList = new ArrayList<>();
+        Cell cell;
+        for (int row = 0; row < cells.length; row++) {
+            for (int column = 0; column < cells[row].length; column++) {
+                cell = cells[row][column];
+                if (sourceCell.inRelationship(cell, relations)) {
+                    cellList.add(cell);
+                }
             }
         }
-        show();
+        return cellList;
     }
 
     public void resolve() {
         note();
-        show();
-        int previousSize = noneValueCellList.size();
         while (noneValueCellList.size() > 0) {
             step1();
             step2();
+            step3();
             show();
-            if (noneValueCellList.size() == previousSize) {
-                step3();
-                step4();
-            } else {
-                previousSize = noneValueCellList.size();
-            }
         }
+        show();
     }
 
     private static int[][] matrixValue = {
@@ -389,5 +328,4 @@ public class Matrix {
         Matrix matrix = new Matrix(matrixValue);
         matrix.resolve();
     }
-
 }
